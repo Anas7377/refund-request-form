@@ -1,0 +1,52 @@
+<?php
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $to = "Counciltax-utilities@astonpearl.co.uk";
+    $subject = "Refund Request Form Submission";
+    
+    $message = "
+    Date: " . $_POST['date'] . "\n
+    Property Address: " . $_POST['property_address'] . "\n
+    Name of Booking Holder: " . $_POST['booking_holder'] . "\n
+    Move-in Date: " . $_POST['move_in_date'] . "\n
+    Booking Provider: " . $_POST['booking_provider'] . "\n
+    Amount to be Refunded: " . $_POST['refund_amount'] . "\n
+    Bank Details: \n
+    - Account Holder Name: " . $_POST['account_holder'] . "\n
+    - Sort Code: " . $_POST['sort_code'] . "\n
+    - Account Number: " . $_POST['account_number'] . "\n
+    ";
+
+    $headers = "From: no-reply@astonpearl.co.uk\r\n";
+    
+    // Handle file upload
+    if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] == UPLOAD_ERR_OK) {
+        $file_tmp = $_FILES['proof_of_payment']['tmp_name'];
+        $file_name = $_FILES['proof_of_payment']['name'];
+        
+        $content = chunk_split(base64_encode(file_get_contents($file_tmp)));
+        $boundary = md5(time());
+
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: multipart/mixed; boundary=\"$boundary\"\r\n";
+
+        $message = "--$boundary\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n"
+            . "Content-Transfer-Encoding: 7bit\r\n\r\n"
+            . $message . "\r\n"
+            . "--$boundary\r\n"
+            . "Content-Type: application/octet-stream; name=\"$file_name\"\r\n"
+            . "Content-Disposition: attachment; filename=\"$file_name\"\r\n"
+            . "Content-Transfer-Encoding: base64\r\n\r\n"
+            . $content . "\r\n"
+            . "--$boundary--";
+    }
+
+    if (mail($to, $subject, $message, $headers)) {
+        echo "Success: Form submitted successfully.";
+    } else {
+        echo "Error: Failed to send email.";
+    }
+} else {
+    echo "Invalid request.";
+}
+?>
